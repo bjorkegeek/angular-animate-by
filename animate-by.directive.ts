@@ -1,4 +1,5 @@
 import {
+  ChangeDetectorRef,
   Directive, ElementRef, EmbeddedViewRef, Input, OnDestroy, OnInit, TemplateRef,
   ViewContainerRef
 } from '@angular/core';
@@ -59,6 +60,7 @@ export class AnimateByDirective<T> implements OnInit, OnDestroy {
   private inited = false;
 
   constructor(private templateRef: TemplateRef<any>,
+              private cd: ChangeDetectorRef,
               private viewContainer: ViewContainerRef,
               private elRef: ElementRef) {
   }
@@ -158,6 +160,7 @@ export class AnimateByDirective<T> implements OnInit, OnDestroy {
     for (let stackEntry of toRemove) {
       this.removeStackEntry(stackEntry);
     }
+    this.cd.markForCheck();
     if (scheduleAnother) {
       this.scheduleAnimationFrame();
     }
