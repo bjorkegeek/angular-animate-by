@@ -1,6 +1,6 @@
 {
   "name": "angular-animate-by",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "Animation container and lifecycle manager for angular.io",
   "main": "index.ts",
   "scripts": {
