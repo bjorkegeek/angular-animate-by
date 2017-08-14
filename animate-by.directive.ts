@@ -1,7 +1,7 @@
 import {
   ChangeDetectorRef,
   Directive, ElementRef, EmbeddedViewRef, Input, OnDestroy, OnInit, TemplateRef,
-  ViewContainerRef
+  ViewContainerRef, isDevMode
 } from '@angular/core';
 
 /**
@@ -32,14 +32,13 @@ import {
  *  * `state` The state of the current instance, may be `'entering'`,
  *    `'leaving'` or `'here'`.
  *
- * A separate attribute "timings" may be specified which must be an object
- * with the properties `enter` and `leave` specifying durations in milliseconds
- * of the enter and leave animations, respectively.
+ * A separate attribute "animateByOptions" may be specified which must be an
+ * object of type `AnimateByOptions`.
  *
  * Example:
  * ```html
  * <ng-template [animateBy]="theNumber"
- *              [timings]="{enter: 500, leave: 300}"
+ *              [animateByOptions]="{timings: {enter: 500, leave: 300}}"
  *              let-myNumber
  *              let-v="existence"
  *              let-myState="state">
@@ -52,7 +51,10 @@ import {
  */
 @Directive({selector: '[animateBy]'})
 export class AnimateByDirective<T> implements OnInit, OnDestroy {
-  @Input() public timings: AnimateByTimings = defaultAnimateByTimings();
+  @Input() public timings: any;
+  @Input() public animateByOptions: AnimateByOptions = {
+    timings: defaultAnimateByTimings()
+  };
   private stack = new Array<AnimateByStackEntry<T> >();
   private current: AnimateByStackEntry<T> | undefined;
   private window: Window | undefined;
@@ -66,6 +68,10 @@ export class AnimateByDirective<T> implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    if (this.timings && isDevMode() && console && console.warn) {
+      console.warn("'timings' attribute no longer supported by animate-by directive.\n" +
+        "Please use the animateByOptions attribute.")
+    }
     this.inited = true;
     if (this.elRef.nativeElement && this.elRef.nativeElement.ownerDocument) {
       let doc = this.elRef.nativeElement.ownerDocument;
@@ -96,7 +102,7 @@ export class AnimateByDirective<T> implements OnInit, OnDestroy {
     let instant = !this.window || !this.inited;
     let context = new AnimateByContext<T>(v,
       instant ? 'here' : 'entering',
-      this.timings);
+      this.animateByOptions.timings || defaultAnimateByTimings());
     let view = this.viewContainer.createEmbeddedView(this.templateRef,
       context)
     this.current = {context, view};
@@ -110,6 +116,10 @@ export class AnimateByDirective<T> implements OnInit, OnDestroy {
     if (this.window) {
       if (this.current.context.state === 'here') {
         this.current.context.state = 'leaving';
+        this.scheduleAnimationFrame();
+      } else if (this.animateByOptions.symmetric &&
+          this.current.context.state == 'entering') {
+        this.current.context.state = 'reverse';
         this.scheduleAnimationFrame();
       }
     } else {
@@ -133,6 +143,9 @@ export class AnimateByDirective<T> implements OnInit, OnDestroy {
       let context = stackEntry.context;
       if (context.state !== 'here' && context.startTime === undefined) {
         context.startTime = clock;
+      }
+      if (context.state === 'reverse') {
+        reverseAnimation(context, clock);
       }
       let localClock = clock - context.startTime;
       if (context.state === 'entering') {
@@ -184,17 +197,40 @@ interface AnimateByStackEntry<T> {
   view: EmbeddedViewRef<any>
 }
 
+function reverseAnimation<T>(context:AnimateByContext<T>, clock: number) {
+  context.startTime = clock - context.timings.leave * (1 - context.existence);
+  context.state = 'leaving';
+}
+
 class AnimateByContext<T> {
   public existence: number;
   public timings: AnimateByTimings;
   public startTime: number | undefined;
 
   constructor(public $implicit: T,
-              public state: 'entering' | 'leaving' | 'here',
+              public state: 'entering' | 'leaving' | 'here' | 'reverse',
               timings: AnimateByTimings) {
     this.timings = {...timings};
     this.existence = (state === 'here') ? 1 : 0;
   }
+}
+
+interface AnimateByOptions {
+  /**
+   * Controls behavior when an object is removed before the entry animation is
+   * complete. If `symmetric` is set to false (or is not defined), the _enter_
+   * animation will be run to completion, after which a complete _leave_
+   * animation will be run.
+   * If `symmetric` is set to true, the _enter_ animation is halted and replaced
+   * by a _leave_ animation at the same value of _existence_.
+   */
+  symmetric?: boolean;
+
+  /**
+   * Controls animation timings. If not provided, a default of 1000ms
+   * is used.
+   */
+  timings?: AnimateByTimings;
 }
 
 interface AnimateByTimings {
