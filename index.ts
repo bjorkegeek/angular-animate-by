@@ -1,1 +1,1 @@
-export * from './animate-by.directive.ts';
+export * from './animate-by.directive';
