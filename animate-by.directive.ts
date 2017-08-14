@@ -215,7 +215,7 @@ class AnimateByContext<T> {
   }
 }
 
-interface AnimateByOptions {
+export interface AnimateByOptions {
   /**
    * Controls behavior when an object is removed before the entry animation is
    * complete. If `symmetric` is set to false (or is not defined), the _enter_
@@ -233,7 +233,7 @@ interface AnimateByOptions {
   timings?: AnimateByTimings;
 }
 
-interface AnimateByTimings {
+export interface AnimateByTimings {
   enter: number;
   leave: number;
 }
