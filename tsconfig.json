@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "target": "es2015",
+        "module": "commonjs",
+        "experimentalDecorators": true,
+	"sourceMap": true,
+	"declaration": true
+    },
+    "files": ["animate-by.directive.ts", "index.ts"]
+}
