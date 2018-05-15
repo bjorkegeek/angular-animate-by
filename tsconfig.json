@@ -4,7 +4,8 @@
         "module": "commonjs",
         "experimentalDecorators": true,
 	"sourceMap": true,
-	"declaration": true
+	"declaration": true,
+        "outDir": "build"
     },
     "files": ["animate-by.directive.ts", "index.ts"]
 }
